@@ -34,7 +34,17 @@ Then paste the right `endpoints/*.{py,js}` snippet into your app file, and add t
 
 ## Automated install (Claude Code)
 
-If you're using Claude Code, run `/feedback-framework` in the target project — the skill detects your framework, picks the right endpoint snippet, copies files, and wires up the template. See [`~/.claude/skills/feedback-framework/SKILL.md`](https://github.com/tighe-ecc/feedback-kit) for details.
+A companion Claude Code skill ships in this repo under [`skill/SKILL.md`](skill/SKILL.md). It detects your framework, picks the right endpoint snippet, copies files, and wires up the template — idempotent.
+
+One-time install of the skill itself:
+
+```bash
+mkdir -p ~/.claude/skills/feedback-framework
+curl -fsSL https://raw.githubusercontent.com/tighe-ecc/feedback-kit/main/skill/SKILL.md \
+  -o ~/.claude/skills/feedback-framework/SKILL.md
+```
+
+Then in any target project: `/feedback-framework`.
 
 ## The entry format
 
