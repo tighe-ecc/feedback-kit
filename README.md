@@ -34,7 +34,10 @@ Then paste the right `endpoints/*.{py,js}` snippet into your app file, and add t
 
 ## Automated install (Claude Code)
 
-A companion Claude Code skill ships in this repo under [`skill/SKILL.md`](skill/SKILL.md). It detects your framework, picks the right endpoint snippet, copies files, and wires up the template — idempotent.
+A companion Claude Code skill ships in this repo under [`skill/SKILL.md`](skill/SKILL.md). It runs in two phases:
+
+- **Phase 1 (always):** detects your framework (FastAPI / Flask / Express), copies the kit files into the right places, patches your app and base template, seeds `feedback.md`. Idempotent.
+- **Phase 2 (optional):** offers to register a **nightly remote routine** on your Claude.ai account that scans `feedback.md` for new items, implements them on branches, and opens PRs against your default branch. The routine is per-project — it acts as the GitHub identity your current Claude.ai account is OAuthed to, against the repo you're installing into. Decline if you don't want it; you can re-run the skill later to add it.
 
 One-time install of the skill itself:
 

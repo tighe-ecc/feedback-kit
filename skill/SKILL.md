@@ -25,7 +25,13 @@ After install, the user submits feedback from any page of the running app via th
   - Bump this to a tag or SHA when the kit changes — don't trust `main` forever. The downstream installs see whatever this points at, so the pin is the version contract.
 - **Mailroom is the originating copy.** Any tweak to `feedback.py` / `feedback-button.js` in `/Users/tighe.costa/personal/mailroom` MUST be upstreamed to `tighe-ecc/feedback-kit` and a new `KIT_REF` cut here. No automation catches this.
 
-## Steps
+## Two phases
+
+**Phase 1 (always):** install the framework into the current project — files copied/patched, no commit. End-state: the user can run their app and the floating Feedback button writes to `feedback.md`.
+
+**Phase 2 (optional):** offer to register a **nightly remote routine** that scans the project's `feedback.md` and opens PRs for unchecked items overnight. The routine is per-project and runs on the user's own Claude.ai account against their own GitHub identity. If the user declines, Phase 1 still works exactly as before — Phase 2 can be added later by re-invoking the skill.
+
+## Phase 1 — Install the framework
 
 ### 1. Verify state
 
@@ -125,9 +131,75 @@ Print a brief summary:
 - Files patched: `<app-file>` (endpoint), `<template>` (script tag).
 - Next: start the app, click the floating "Feedback" button, submit a test entry, confirm it appears in `feedback.md`.
 
+## Phase 2 — Offer optional nightly automation
+
+After Phase 1 succeeds (or if invoked on a project where Phase 1 was already done), ask the user:
+
+> Want to set up a nightly remote agent that scans `feedback.md` for new items, implements them on branches, and opens PRs against your default branch?
+> - **yes** — register the routine now
+> - **no** — skip; you can run `/feedback-framework` again later to add it
+> - **show** — render the prompt and the exact `/schedule` invocation without registering anything
+
+If `no` or `show`, stop after that. Phase 1 is unaffected.
+
+If `yes`, walk through these steps:
+
+### P2.1 Surface the auth caveat **before** doing anything else
+
+The remote routine clones the project via the *current Claude.ai account's* GitHub OAuth. There is no per-routine secret. If the user is signed into Claude Code under a work / shared account that doesn't have access to the target repo's GitHub owner, the routine will 404 on clone and `AUTH-MISSING:` will appear in the run log.
+
+Print this explicitly to the user. Ask them to confirm:
+
+> "This routine will run as the GitHub identity that **{{their current Claude.ai account}}** has authorized. The target repo is **<owner>/<name>**. Is that the right account, or should you switch Claude Code to a different login first?"
+
+If they need to switch, stop — they can re-invoke the skill once they've `/login`-ed to the right account.
+
+### P2.2 Gather routine parameters
+
+Defaults to compute; ask the user to confirm/override before submitting:
+
+| Parameter                | Default                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_REPO_URL`        | `git remote get-url origin` → normalize to `https://github.com/...` form (strip `.git`, swap SSH → HTTPS)     |
+| `GITHUB_REPO_SLUG`       | `org/name` form derived from the URL                                                                          |
+| `DEFAULT_BRANCH`         | `git symbolic-ref refs/remotes/origin/HEAD` → `main` if unknown                                                |
+| `COMMIT_EMAIL`           | `git config user.email`                                                                                       |
+| `COMMIT_NAME`            | `git config user.name`                                                                                        |
+| `PROJECT_DESCRIPTION`    | first non-blank line of README.md, trimmed; or one sentence the user provides                                 |
+| `REPO_LAYOUT_HINTS`      | a short string the skill composes from the detected layout (e.g. `FastAPI app at app.py; templates/; static/; tests/`) |
+| `VERIFICATION_COMMANDS`  | python projects: `python -c "import <root-module>"` and `pytest -x --timeout=60` (only the import check if `tests/` is absent). Node/Express: `node -e "require('./<entry>')"`. Let the user override. |
+| `MAX_REAL_PRS`           | `3`                                                                                                            |
+| `CRON_EXPRESSION` (UTC)  | `0 10 * * *` (≈ 03:00 PT). Ask for time zone; compute UTC.                                                     |
+
+### P2.3 Render the prompt
+
+Fetch the template:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/tighe-ecc/feedback-kit/${KIT_REF}/skill/routine-prompt.template.md" \
+  | sed -n '/^## Template$/,/^## /{/^## Template$/d;/^## /d;p}'
+```
+
+Substitute all `{{PLACEHOLDER}}`s with the values from P2.2.
+
+### P2.4 Register the routine
+
+Hand the rendered prompt to the `schedule` skill — invoke it with `create` and a fully-specified body: `cron_expression`, `name` (suggest `<project-slug>-nightly-feedback-drain`), `enabled: true`, `session_context.sources` set to the target repo URL, `model: claude-sonnet-4-6`, `allowed_tools: ["Bash","Read","Write","Edit","Glob","Grep","Agent","TaskCreate","TaskUpdate","TaskList"]`, and the event message set to the rendered prompt.
+
+### P2.5 Verify with a manual fire
+
+Immediately run the new routine on-demand (`RemoteTrigger action=run`) and ask the user to check the run history at `https://claude.ai/code/routines/<id>`. Look for one of:
+
+- `NIGHTLY-RUN-SUMMARY: real_prs=… draft_prs=… skipped_existing=… open_items_remaining=…` → auth works, the routine is live.
+- `AUTH-MISSING: this routine's Claude.ai account lacks GitHub access to <slug>.` → the OAuth grant is wrong for this account; user fixes at `https://claude.ai/settings/integrations`, then re-fires the routine.
+
+Print the routine URL one last time so the user can bookmark it.
+
 ## Re-running the skill
 
-Safe. Sentinels in the endpoint snippet and a check for `feedback-button.js` in the template make all patches idempotent. File fetches overwrite — that's how kit updates propagate. If the user has hand-edited `feedback.py` or `feedback-button.js` locally, warn before overwriting.
+Safe. Sentinels in the endpoint snippet and a check for `feedback-button.js` in the template make all Phase 1 patches idempotent. File fetches overwrite — that's how kit updates propagate. If the user has hand-edited `feedback.py` or `feedback-button.js` locally, warn before overwriting.
+
+Phase 2 is also re-invocable: if the user previously chose `no`, running the skill again gives them another chance to opt in. If a routine already exists for this project (name match on `<project-slug>-nightly-feedback-drain` in `RemoteTrigger list`), skip the create step and just show the URL — don't make duplicates.
 
 ## When to refuse / escalate
 
