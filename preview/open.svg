@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 540" role="img" aria-label="Feedback modal in its open state, showing type select, title input, description textarea, expedite checkbox, and Cancel/Submit buttons">
+  <defs>
+    <filter id="modalShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- page backdrop -->
+  <rect width="600" height="540" fill="#f3f4f6"/>
+  <!-- dim overlay -->
+  <rect width="600" height="540" fill="#000000" fill-opacity="0.4"/>
+
+  <!-- modal -->
+  <g filter="url(#modalShadow)">
+    <rect x="60" y="30" width="480" height="480" rx="8" fill="#ffffff"/>
+
+    <!-- heading -->
+    <text x="80" y="66" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="16" font-weight="600" fill="#111827">Send feedback</text>
+
+    <!-- Type -->
+    <text x="80" y="98" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="12" font-weight="500" fill="#374151">Type</text>
+    <rect x="80" y="106" width="440" height="36" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+    <text x="94" y="128" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="14" fill="#111827">Bug</text>
+    <text x="510" y="128" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="10" fill="#6b7280" text-anchor="end">▾</text>
+
+    <!-- Title -->
+    <text x="80" y="166" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="12" font-weight="500" fill="#374151">Title</text>
+    <rect x="80" y="174" width="440" height="36" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+    <text x="94" y="196" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="14" fill="#9ca3af">Background updater stalls</text>
+
+    <!-- Description -->
+    <text x="80" y="234" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="12" font-weight="500" fill="#374151">Description</text>
+    <rect x="80" y="242" width="440" height="120" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+    <text x="94" y="264" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="14" fill="#9ca3af">Tracker hasn't refreshed since 09:00; GUI still says &quot;updated 2m ago.&quot;</text>
+
+    <!-- Expedite -->
+    <rect x="80" y="384" width="14" height="14" rx="2" fill="#ffffff" stroke="#d1d5db"/>
+    <text x="106" y="396" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="14" font-weight="500" fill="#111827">Expedite</text>
+    <text x="106" y="412" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="11" fill="#6b7280">Trigger the remote agent now instead of waiting for the next nightly run.</text>
+
+    <!-- buttons -->
+    <rect x="364" y="450" width="74" height="36" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+    <text x="401" y="473" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="13" fill="#111827" text-anchor="middle">Cancel</text>
+    <rect x="446" y="450" width="74" height="36" rx="4" fill="#2563eb"/>
+    <text x="483" y="473" font-family="-apple-system, system-ui, &quot;Segoe UI&quot;, Roboto, sans-serif" font-size="13" font-weight="500" fill="#ffffff" text-anchor="middle">Submit</text>
+  </g>
+</svg>

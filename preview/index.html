@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>feedback-kit preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { margin: 0; padding: 0; background: #f3f4f6;
+         font: 14px/1.5 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+         color: #111827; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 120px; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { color: #4b5563; margin: 0 0 16px; }
+  .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+           padding: 16px; margin-top: 24px; }
+  .panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; }
+  .row label { min-width: 130px; color: #374151; }
+  .row input[type="text"] { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font: inherit; }
+  .actions { margin-top: 12px; display: flex; gap: 8px; }
+  .actions button { padding: 6px 12px; border: 1px solid #d1d5db; background: #fff;
+                    border-radius: 4px; font: inherit; cursor: pointer; }
+  .actions button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .meta { color: #6b7280; font-size: 12px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+         background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>feedback-kit preview</h1>
+  <p>The Feedback button renders at bottom-right exactly as it will in your app.
+     Tweak the config below and reload to preview. Nothing is submitted anywhere —
+     the form's POST is stubbed locally.</p>
+
+  <div class="panel">
+    <h2>Config</h2>
+    <div class="row">
+      <label for="cfg-tool">toolName</label>
+      <input id="cfg-tool" type="text" value="preview" />
+    </div>
+    <div class="row">
+      <label for="cfg-expedite">Show Expedite checkbox</label>
+      <input id="cfg-expedite" type="checkbox" checked />
+    </div>
+    <div class="actions">
+      <button id="reload">Reload preview</button>
+      <button id="open" class="primary">Open modal</button>
+    </div>
+    <p class="meta" style="margin-top: 12px">
+      To preview a custom config in your project, edit the
+      <code>initFeedback({...})</code> call this page produces and copy it into
+      your base template.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h2>Resulting <code>initFeedback</code> call</h2>
+    <pre id="snippet" style="margin:0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color:#111827"></pre>
+  </div>
+</div>
+
+<script type="module">
+import { initFeedback } from "../reference/feedback-button.js";
+
+const origFetch = window.fetch;
+window.fetch = async (url, opts) => {
+  if (typeof url === "string" && url.startsWith("/__preview__")) {
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return origFetch(url, opts);
+};
+
+let api = null;
+
+function readConfig() {
+  return {
+    endpoint: "/__preview__",
+    toolName: document.getElementById("cfg-tool").value.trim() || "preview",
+    expedite: document.getElementById("cfg-expedite").checked,
+  };
+}
+
+function renderSnippet(cfg) {
+  const lines = [
+    `import { initFeedback } from '/static/feedback-button.js';`,
+    `initFeedback({`,
+    `  endpoint: '/feedback',`,
+    `  toolName: ${JSON.stringify(cfg.toolName)},`,
+    `  expedite: ${cfg.expedite ? "true" : "false"},`,
+    `});`,
+  ];
+  document.getElementById("snippet").textContent = lines.join("\n");
+}
+
+function mount() {
+  if (api) api.destroy();
+  const cfg = readConfig();
+  api = initFeedback(cfg);
+  renderSnippet(cfg);
+}
+
+mount();
+setTimeout(() => api && api.open(), 100);
+
+document.getElementById("reload").addEventListener("click", mount);
+document.getElementById("open").addEventListener("click", () => api && api.open());
+</script>
+</body>
+</html>

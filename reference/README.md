@@ -30,6 +30,6 @@ If any of those don't match, see `../adaptations/` for the right pattern.
 6. If `expedite` was true, endpoint additionally POSTs to the Claude routine's run endpoint, kicking the agent immediately.
 7. The remote agent (see `../automation/`) clones the repo, drains unchecked entries, opens PRs.
 
-## Drift discipline
+## Contributing changes back
 
-If you tweak `feedback.py` or `feedback-button.js` in a downstream project (e.g. mailroom), **upstream the change here** and cut a new tag/SHA. The deploy procedure pins to a `KIT_REF`; bumping that is the only way downstream installs pick up the change.
+If you change `feedback.py` or `feedback-button.js` in a downstream project and the change would help others, open a PR here. Downstream installs pin to a kit ref; cutting a new tag/SHA is the propagation path.
