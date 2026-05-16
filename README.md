@@ -1,74 +1,66 @@
 # feedback-kit
 
-A minimal, framework-agnostic feedback collection drop-in. Three pieces:
+Drop an **agentically-actioned feedback button** into any web app. Users submit bugs and feature requests in-app; a scheduled agent reads the queue and opens PRs against your repo; you stay focused on review, taste, and opinion — not triage and mechanical implementation.
 
-1. **`feedback.py`** — stdlib-only Python library. `note(description, type, title, tool, url)` appends a structured entry to a project-local `feedback.md`. Also runnable as a CLI: `python -m feedback "..." --type bug`.
-2. **`feedback-button.js`** — self-contained ES module. Floating button + modal, shadow-DOM isolated so it can't collide with your existing styles. POSTs JSON to a configurable endpoint.
-3. **An endpoint** that bridges the JS POST → `feedback.note(...)`. Reference snippets for FastAPI, Flask, and Express are in `endpoints/`.
+This repo is built to be deployed by a code-generation agent, not by hand.
 
-Feedback lives in a plain Markdown checklist (`feedback.md`) — open items are `- [ ]`, resolved are `- [x]`. Human-readable, diff-friendly, no database.
+## How to install it
 
-## Quick install (manual)
+In the repository that contains *your* application — whether it's locally hosted, on a VPS, on a managed platform, anywhere — launch your coding agent (Claude Code, Codex, Cursor, Aider, whatever) and tell it:
 
-In the target project:
+> Implement this: `https://github.com/tighe-ecc/feedback-kit`
 
-```bash
-# 1. Drop the library at the project root
-curl -O https://raw.githubusercontent.com/tighe-ecc/feedback-kit/main/feedback.py
+That's the whole interaction. The agent will:
 
-# 2. Drop the UI into wherever you serve static assets
-curl -o static/feedback-button.js https://raw.githubusercontent.com/tighe-ecc/feedback-kit/main/feedback-button.js
+1. **Read** every document in this repo to understand the concept.
+2. **Explore** your project to understand its stack, hosting model, and structure.
+3. **Plan** a concrete installation tailored to your project's idiosyncrasies, and present it to you for sign-off.
+4. **Implement** the in-app capture pieces (the floating Feedback button with Bug/Feature options and an Expedite checkbox, the receive endpoint, the Markdown queue file) once you approve the plan.
+5. **Walk you through** setting up the optional remote agent on your preferred platform — Claude.ai routines, an OpenAI scheduled job, a GitHub Actions cron, whatever you already use — so it can drain the feedback queue into PRs autonomously.
 
-# 3. Seed the feedback file
-echo "# Feedback" > feedback.md
-```
+You stay in the loop only where you should be: reviewing the plan up front, reviewing each PR before merge.
 
-Then paste the right `endpoints/*.{py,js}` snippet into your app file, and add this to your base HTML template:
+## What the user-facing surface looks like
 
-```html
-<script type="module">
-  import { initFeedback } from '/static/feedback-button.js';
-  initFeedback({ endpoint: '/feedback', toolName: 'my-app' });
-</script>
-```
+A floating "Feedback" button on every page of your app. Click it, and a small modal opens:
 
-## Automated install (Claude Code)
+- **Type:** Bug or Feature
+- **Title** + **Description**
+- **Expedite** (optional checkbox): trigger the remote agent immediately instead of waiting for the next nightly run
 
-A companion Claude Code skill ships in this repo under [`skill/SKILL.md`](skill/SKILL.md). It runs in two phases:
+Submit appends a Markdown entry to `feedback.md` at the repo root. That file is the queue, the spec, and the audit log — diff-friendly, version-controlled with the code it's about, and formatted so an agent can parse it deterministically.
 
-- **Phase 1 (always):** detects your framework (FastAPI / Flask / Express), copies the kit files into the right places, patches your app and base template, seeds `feedback.md`. Idempotent.
-- **Phase 2 (optional):** offers to register a **nightly remote routine** on your Claude.ai account that scans `feedback.md` for new items, implements them on branches, and opens PRs against your default branch. The routine is per-project — it acts as the GitHub identity your current Claude.ai account is OAuthed to, against the repo you're installing into. Decline if you don't want it; you can re-run the skill later to add it.
+## What the agentic loop gives you
 
-One-time install of the skill itself:
+The pitch in one line: **ship idiosyncratic, one-shot software with confidence, because its sustaining engineering happens without you.**
 
-```bash
-mkdir -p ~/.claude/skills/feedback-framework
-curl -fsSL https://raw.githubusercontent.com/tighe-ecc/feedback-kit/main/skill/SKILL.md \
-  -o ~/.claude/skills/feedback-framework/SKILL.md
-```
+You build something custom — vibe-coded, AI-assisted, a one-off internal tool — and deploy it. Users use it and find bugs. Instead of you sifting through their reports and writing fixes:
 
-Then in any target project: `/feedback-framework`.
+- They click Feedback, type two sentences, hit Submit (or Expedite if they need it now).
+- A scheduled agent reads the queue, implements each item on its own branch, runs your verification gate, and opens a PR.
+- You wake up to a list of candidate fixes. Review them. Merge the good ones. Close the bad ones. The agent's never edits to `feedback.md` itself — closing the loop is your call.
 
-## The entry format
+The human stays in the loop on **taste and opinion**. The machine handles **mechanical implementation**.
 
-`feedback.md` looks like this:
+## What's in this repo
 
-```markdown
-# Feedback
+Designed to be read by an agent in this order:
 
-- [ ] **2026-05-14 12:40 — Bug: Background updater not running**
-  Not clear to me if background updates are not running or if the GUI just isn't updating?
-  _tool: my-app · source: http://localhost:8000/_
+| File / dir                          | What it's for                                                                                                                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`CONCEPT.md`](CONCEPT.md)          | The concept: what this kit is, why it's shaped the way it is, and the invariants any deployment must preserve.                                                                                            |
+| [`DEPLOY.md`](DEPLOY.md)            | The procedure an agent follows when a user points it at this repo. Discovery → plan → present → implement → verify → optional remote-agent setup.                                                          |
+| [`reference/`](reference/)          | One end-to-end implementation of the kit (FastAPI/Flask/Express, locally hosted). Treat as *example*, not prescription.                                                                                    |
+| [`adaptations/`](adaptations/)      | Short pattern docs for everything the reference doesn't cover: remote hosting, no backend, exotic stacks, etc. Each says when to pick it and what changes vs the reference.                                |
+| [`automation/`](automation/)        | The optional remote-agent half. Includes a prompt template that works on any agent platform — Claude.ai routines, OpenAI assistants, a self-hosted cron + LLM, etc. Mailroom uses Claude.ai routines.     |
+| [`skill/`](skill/)                  | An optional preinstalled Claude Code skill that maps `/feedback-framework` to "read DEPLOY.md and proceed." You don't need it; the paste-the-URL workflow works without any skill preinstalled.            |
 
-- [x] **2026-05-11 09:11 — Feature: Add dark mode toggle**
-  _tool: my-app · source: Manual input_
-```
+There's also a working example: [`tighe-ecc/mailroom`](https://github.com/tighe-ecc/mailroom) is a personal app that uses this kit end-to-end (capture + Claude.ai routine). When the agent needs a real-world reference, point it there.
 
-- `[ ]` = open, `[x]` = resolved (flip when done)
-- Timestamp is local time, `YYYY-MM-DD HH:MM`
-- `Bug` or `Feature` is required; `: Title` is optional
-- Indented metadata line is optional (`_tool: X · source: URL_`)
+## Manual install (humans who want to skip the agent)
+
+If you'd rather install by hand, read `DEPLOY.md` and apply each step yourself, picking the right adaptation from `adaptations/`. The files in `reference/` are copyable as-is for FastAPI/Flask/Express. Everything else is in the text.
 
 ## Drift discipline
 
-If you tweak `feedback.py` or `feedback-button.js` in a downstream project, please upstream the change here and cut a new tag/SHA. The Claude skill pins to a `KIT_REF`; bumping that is the only way downstream installs pick up your changes.
+If you customize the reference files in a downstream project and the changes would be useful for everyone, send a PR back here and cut a new tag. Downstream installs pin to a kit ref; bumping that ref is the only way changes propagate.

@@ -1,6 +1,8 @@
-# Nightly feedback-to-PR routine — prompt template
+# Feedback-to-PR routine — prompt template
 
-This file is the prompt the `/feedback-framework` skill submits to the `schedule` skill when a user opts in to Phase 2 (optional nightly automation). The skill renders this template, substituting the `{{PLACEHOLDERS}}` below with values it gathered from the target project.
+This file is the prompt a scheduled agent runs when it fires. It's LLM-platform-agnostic — the same text works whether you register it with Claude.ai routines, run it from a GitHub Actions cron via an LLM CLI, or wire it to an OpenAI Assistant on an external scheduler. See `README.md` here for platform choices.
+
+The deploy procedure (`../DEPLOY.md` stage 5) renders this template, substituting the `{{PLACEHOLDERS}}` below with values gathered from the target project.
 
 ## Placeholders
 
@@ -53,7 +55,7 @@ For each item you decide to attempt:
 
 a. `git checkout {{DEFAULT_BRANCH}} && git pull && git checkout -b <branch>`
 
-b. Spawn a sub-agent (Agent tool, subagent_type general-purpose). Brief it with the exact quoted feedback item, the repo layout ({{REPO_LAYOUT_HINTS}}), and instruct it to:
+b. Spawn a sub-agent if your platform supports it (e.g. Claude Code's Agent tool with subagent_type general-purpose), or otherwise do the implementation directly. Brief the worker (or yourself) with the exact quoted feedback item, the repo layout ({{REPO_LAYOUT_HINTS}}), and instruct it to:
    - Make the minimum change required, follow existing patterns
    - Use the conventional commit style observed in this repo
    - **Not touch `feedback.md`** under any circumstance — all state lives in branch + PR
@@ -94,9 +96,9 @@ Last line of your output, exactly this format (so a zero-work night is distingui
 
 ## If GitHub access fails
 
-If clone returns 404, or `git push` / `gh pr create` returns a 401/403/permission error, the Claude.ai account that owns this routine is not OAuthed to a GitHub identity that can read+write {{GITHUB_REPO_SLUG}}. Stop — do NOT try to work around it. Print the error verbatim and then this exact line:
+If clone returns 404, or `git push` / `gh pr create` returns a 401/403/permission error, the credentials available to this scheduled agent do not have GitHub access to {{GITHUB_REPO_SLUG}}. Stop — do NOT try to work around it. Print the error verbatim and then this exact line:
 
-    AUTH-MISSING: this routine's Claude.ai account lacks GitHub access to {{GITHUB_REPO_SLUG}}. Re-create the routine on a Claude.ai account whose GitHub OAuth grants access to that repo's owner.
+    AUTH-MISSING: this scheduled agent lacks GitHub access to {{GITHUB_REPO_SLUG}}. Reconfigure the platform credentials (Claude.ai OAuth account, GitHub Actions secret, PAT, deploy key — whichever applies) to grant read+write on that repo.
 
 Then exit.
 
